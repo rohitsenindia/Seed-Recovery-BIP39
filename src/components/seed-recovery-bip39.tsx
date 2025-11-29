@@ -562,6 +562,15 @@ export default function SeedRecoveryBIP39() {
 
       </CardContent>
 
+      <CardFooter className="flex-col items-center gap-2 pt-6 text-center text-sm text-muted-foreground">
+        <p>
+          Built by <a href="https://github.com/rohitsenindia" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">Rohit Sen</a>.
+        </p>
+        <p>
+          Verify the code on <a href="https://github.com/rohitsenindia/Seed-Recovery-BIP39" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">GitHub</a>.
+        </p>
+      </CardFooter>
+
       <AlertDialog open={showFullMnemonicWarning} onOpenChange={setShowFullMnemonicWarning}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -569,7 +578,7 @@ export default function SeedRecoveryBIP39() {
             <AlertDialogDescription>
               You appear to have entered a complete seed phrase. For your security, avoid pasting full, live seed phrases into any online tool, even this one.
               <br/><br/>
-              This tool is designed for recovering <strong>missing</strong> words. If you are trying to access a wallet with a known seed, please use a trusted wallet application directly.
+              This tool is for recovering <strong>missing</strong> words. If you are trying to access a wallet with a known seed, please use a trusted wallet application directly.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -581,3 +590,5 @@ export default function SeedRecoveryBIP39() {
     </Card>
   );
 }
+
+    

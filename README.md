@@ -53,3 +53,12 @@ This tool is designed to run entirely within your web browser. **No data, includ
 *   **bip39:** For mnemonic phrase generation and validation.
 *   **Web Workers:** To run the computationally intensive search without freezing the browser.
 *   **Tailwind CSS & ShadCN UI:** For styling and components.
+
+## ✍️ Author & Code Verification
+
+This tool was built by **[Rohit Sen](https://github.com/rohitsenindia)**.
+
+The entire codebase is open-source. You are encouraged to audit and verify the code's integrity to ensure your security. You can find the repository here:
+**[https://github.com/rohitsenindia/Seed-Recovery-BIP39](https://github.com/rohitsenindia/Seed-Recovery-BIP39)**
+
+    
