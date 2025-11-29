@@ -46,7 +46,7 @@ type RecoveryMode = "ordered" | "unordered";
 
 const DEFAULT_DERIVATION_PATH = "m/44'/60'/0'/0";
 
-export default function SeedSavior() {
+export default function SeedRecoveryBIP39() {
   // --- State Management ---
   const [wordCount, setWordCount] = React.useState<12 | 24>(12);
   const [words, setWords] = React.useState<string[]>(Array(12).fill(""));
@@ -314,7 +314,7 @@ export default function SeedSavior() {
 
   const handleExport = () => {
     if (!result) return;
-    const fileContent = `Seed Savior Recovery Result\n\n`
+    const fileContent = `Seed Recovery BIP39 Result\n\n`
       + `Date: ${new Date().toISOString()}\n\n`
       + `WARNING: This file contains your private seed phrase. Keep it safe and offline.\n\n`
       + `-------------------------------------\n`
@@ -327,7 +327,7 @@ export default function SeedSavior() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `seed-savior-recovery-${new Date().getTime()}.txt`;
+    a.download = `seed-recovery-bip39-recovery-${new Date().getTime()}.txt`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -351,7 +351,7 @@ export default function SeedSavior() {
         <div className="flex items-center gap-4">
           <KeyRound className="h-10 w-10 text-primary" />
           <div>
-            <CardTitle className="text-3xl font-bold">Seed Savior</CardTitle>
+            <CardTitle className="text-3xl font-bold">Seed Recovery BIP39</CardTitle>
             <CardDescription className="text-lg">Client-Side BIP39 Seed Phrase Recovery Tool</CardDescription>
           </div>
         </div>
@@ -580,5 +580,3 @@ export default function SeedSavior() {
     </Card>
   );
 }
-
-    

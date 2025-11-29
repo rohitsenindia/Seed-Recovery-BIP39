@@ -3,7 +3,7 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
 
 export const metadata: Metadata = {
-  title: 'Seed Savior',
+  title: 'Seed Recovery BIP39',
   description: 'Safely recover your BIP39 seed phrase.',
 };
 

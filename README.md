@@ -1,4 +1,4 @@
-# Seed Savior - Client-Side BIP39 Seed Phrase Recovery Tool
+# Seed Recovery BIP39 - Client-Side BIP39 Seed Phrase Recovery Tool
 
 **Disclaimer:** This tool is intended for personal use to recover your own cryptocurrency wallet. Unauthorized access to another person's wallet is illegal and unethical. Use this tool responsibly and at your own risk.
 
