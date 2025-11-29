@@ -41,6 +41,8 @@ type WorkerMessage = {
   type: "PROGRESS" | "FOUND" | "ERROR" | "STATUS_UPDATE" | "DONE";
   payload?: any;
 };
+type RecoveryMode = "ordered" | "unordered";
+
 
 const DEFAULT_DERIVATION_PATH = "m/44'/60'/0'/0";
 
@@ -48,6 +50,9 @@ export default function SeedSavior() {
   // --- State Management ---
   const [wordCount, setWordCount] = React.useState<12 | 24>(12);
   const [words, setWords] = React.useState<string[]>(Array(12).fill(""));
+  const [knownWords, setKnownWords] = React.useState("");
+  const [missingWordCount, setMissingWordCount] = React.useState<number>(1);
+  const [recoveryMode, setRecoveryMode] = React.useState<RecoveryMode>("ordered");
   const [targetAddress, setTargetAddress] = React.useState("");
   const [derivationPath, setDerivationPath] = React.useState(DEFAULT_DERIVATION_PATH);
   const [childIndexes, setChildIndexes] = React.useState(30);
@@ -94,11 +99,18 @@ export default function SeedSavior() {
 
   // Monitor for full seed phrase pasting
   React.useEffect(() => {
-    const filledWords = words.filter(w => w.trim() !== "" && w.trim() !== "????");
-    if (filledWords.length === wordCount) {
-      setShowFullMnemonicWarning(true);
+    if (recoveryMode === 'ordered') {
+        const filledWords = words.filter(w => w.trim() !== "" && w.trim() !== "????");
+        if (filledWords.length === wordCount) {
+          setShowFullMnemonicWarning(true);
+        }
+    } else {
+        const pastedWords = knownWords.split(/\s+/).filter(Boolean);
+        if (pastedWords.length + missingWordCount === wordCount) {
+             setShowFullMnemonicWarning(true);
+        }
     }
-  }, [words, wordCount]);
+  }, [words, wordCount, recoveryMode, knownWords, missingWordCount]);
 
   // --- Worker Communication ---
   const postToWorker = (type: string, payload?: any) => {
@@ -166,29 +178,66 @@ export default function SeedSavior() {
       addLog(msg, "error");
       return;
     }
-    const missingIndexes = words.map((w, i) => (w.trim() === "" || w.trim() === "????") ? i : -1).filter(i => i !== -1);
-    if (missingIndexes.length === 0) {
-      const msg = "Please leave at least one word blank to search for.";
-      setError(msg);
-      addLog(msg, "error");
-      return;
-    }
-    if (missingIndexes.length > 2) {
-      const msg = "This tool supports finding a maximum of two missing words.";
-      setError(msg);
-      addLog(msg, "error");
-      return;
+
+    let workerPayload: any;
+
+    if (recoveryMode === 'ordered') {
+      const missingIndexes = words.map((w, i) => (w.trim() === "" || w.trim() === "????") ? i : -1).filter(i => i !== -1);
+      if (missingIndexes.length === 0) {
+        const msg = "Please leave at least one word blank to search for.";
+        setError(msg);
+        addLog(msg, "error");
+        return;
+      }
+      if (missingIndexes.length > 2) {
+        const msg = "This tool supports finding a maximum of two missing words in ordered mode.";
+        setError(msg);
+        addLog(msg, "error");
+        return;
+      }
+      addLog(`Starting 'ordered' recovery for ${missingIndexes.length} missing word(s)...`, "info");
+      workerPayload = {
+        words,
+        missingIndexes,
+        mode: 'ordered'
+      };
+    } else { // unordered
+        const knownWordsList = knownWords.split(/\s+/).filter(Boolean);
+        const totalWords = knownWordsList.length + missingWordCount;
+        if (totalWords !== wordCount) {
+            const msg = `The number of known words (${knownWordsList.length}) + missing words (${missingWordCount}) must equal the seed phrase length (${wordCount}).`;
+            setError(msg);
+            addLog(msg, "error");
+            return;
+        }
+        if (missingWordCount < 1) {
+            const msg = "You must have at least one missing word.";
+            setError(msg);
+            addLog(msg, "error");
+            return;
+        }
+        if (missingWordCount > 2) {
+            const msg = "This tool supports a maximum of two missing words in unordered mode.";
+            setError(msg);
+            addLog(msg, "error");
+            return;
+        }
+        addLog(`Starting 'unordered' recovery for ${missingWordCount} missing word(s)...`, "info");
+        workerPayload = {
+            knownWords: knownWordsList,
+            wordCount,
+            missingWordCount,
+            mode: 'unordered'
+        };
     }
 
-    addLog(`Starting recovery process for ${missingIndexes.length} missing word(s)...`, "info");
     addLog(`Target Address: ${targetAddress}`);
     addLog(`Derivation Path Base: ${derivationPath}`);
-    addLog(`Indexes to check: ${childIndexes}`);
+    addLog(`Addresses to Check per Seed: ${childIndexes}`);
 
     setStatus("running");
     postToWorker("START", {
-      words,
-      missingIndexes,
+      ...workerPayload,
       targetAddress,
       derivationPath,
       childIndexes,
@@ -223,12 +272,35 @@ export default function SeedSavior() {
     const wallet = ethers.Wallet.fromMnemonic(tempMnemonic, `${DEFAULT_DERIVATION_PATH}/0`);
     
     const testWords = tempMnemonic.split(" ");
-    const missingIndex = Math.floor(Math.random() * 12);
-    const missingWord = testWords[missingIndex];
-    testWords[missingIndex] = "";
+    
+    if (recoveryMode === 'ordered') {
+        const missingIndex = Math.floor(Math.random() * 12);
+        const missingWord = testWords[missingIndex];
+        testWords[missingIndex] = "";
+
+        setWordCount(12);
+        setWords(testWords);
+        toast({
+            title: "Test Case Loaded (Ordered)",
+            description: `A test wallet has been generated. The missing word is "${missingWord}". Click Start to test.`,
+        });
+    } else {
+        const wordsToShuffle = [...testWords];
+        const missingWord = wordsToShuffle.pop()!;
+        // Shuffle the known words
+        for (let i = wordsToShuffle.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [wordsToShuffle[i], wordsToShuffle[j]] = [wordsToShuffle[j], wordsToShuffle[i]];
+        }
+        setKnownWords(wordsToShuffle.join(' '));
+        setMissingWordCount(1);
+        toast({
+            title: "Test Case Loaded (Unordered)",
+            description: `A test wallet has been generated. Known words are filled in. The missing word is "${missingWord}". Click Start to test.`,
+        });
+    }
 
     setWordCount(12);
-    setWords(testWords);
     setTargetAddress(wallet.address);
     setDerivationPath(DEFAULT_DERIVATION_PATH);
     setChildIndexes(10);
@@ -237,10 +309,6 @@ export default function SeedSavior() {
     setResult(null);
     setError(null);
     
-    toast({
-        title: "Test Case Loaded",
-        description: `A test wallet has been generated. The missing word is "${missingWord}". Click Start to test.`,
-    });
     addLog("Test case loaded. Click 'Start Recovery' to begin.", "info");
   };
 
@@ -303,9 +371,10 @@ export default function SeedSavior() {
               <div className="flex items-center gap-2"><HelpCircle className="h-5 w-5" />How to Use & Security Info</div>
             </AccordionTrigger>
             <AccordionContent className="space-y-2 text-sm text-muted-foreground px-2">
-              <p><strong>1. Fill in Details:</strong> Enter your known seed words, leaving blanks for missing ones (max 2). Provide a known wallet address for verification.</p>
-              <p><strong>2. Confirm & Start:</strong> Check the ownership box and click 'Start Recovery'. The tool will begin searching for the missing words.</p>
-              <p><strong>3. Wait for Results:</strong> The process can take a long time, especially for two words. Progress will be displayed below. If found, the full seed will be shown.</p>
+              <p><strong>1. Choose Mode:</strong> Select 'Ordered' if you know the position of your words, or 'Unordered' if you don't.</p>
+              <p><strong>2. Fill in Details:</strong> Enter your known words and the number of missing words. Provide a known wallet address for verification.</p>
+              <p><strong>3. Confirm & Start:</strong> Check the ownership box and click 'Start Recovery'. The tool will begin searching.</p>
+              <p><strong>4. Wait for Results:</strong> The process can take a long time. Progress will be displayed below. If found, the full seed will be shown.</p>
               <p><strong>Ethical Use:</strong> This tool is for personal wallet recovery ONLY. Unauthorized access to others' wallets is illegal and unethical.</p>
               <p><strong>Offline Use:</strong> Right-click this page -> "Save As" to download it. Disconnect from the internet and open the saved HTML file to use it securely offline.</p>
             </AccordionContent>
@@ -358,28 +427,76 @@ export default function SeedSavior() {
           </div>
         </div>
 
-        {/* --- Mnemonic Input --- */}
+         {/* --- Recovery Mode --- */}
         <div>
-          <Label className="font-semibold text-base mb-2 block">Seed Phrase (leave missing words blank)</Label>
-          <div className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4`}>
-            {words.map((word, index) => (
-              <div key={index} className="relative">
-                <span className="absolute -left-5 top-2.5 text-xs text-muted-foreground font-mono">{index + 1}.</span>
-                <Input
-                  type="text"
-                  placeholder="????"
-                  value={word}
-                  onChange={e => handleWordChange(index, e.target.value)}
-                  className="lowercase"
-                  disabled={isBusy}
-                  autoCapitalize="none"
-                  autoCorrect="off"
-                  spellCheck="false"
-                />
-              </div>
-            ))}
-          </div>
+          <Label className="font-semibold text-base">Recovery Mode</Label>
+           <p className="text-sm text-muted-foreground mb-2">Choose 'Ordered' if you know the position of your words. Choose 'Unordered' if you only have a list of words.</p>
+          <RadioGroup value={recoveryMode} onValueChange={(v) => setRecoveryMode(v as RecoveryMode)} className="flex gap-4 items-center" disabled={isBusy}>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="ordered" id="mode-ordered" />
+              <Label htmlFor="mode-ordered">Ordered</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="unordered" id="mode-unordered" />
+              <Label htmlFor="mode-unordered">Unordered</Label>
+            </div>
+          </RadioGroup>
         </div>
+
+
+        {/* --- Mnemonic Input --- */}
+        {recoveryMode === 'ordered' ? (
+            <div>
+              <Label className="font-semibold text-base mb-2 block">Seed Phrase (leave missing words blank)</Label>
+              <div className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4`}>
+                {words.map((word, index) => (
+                  <div key={index} className="relative">
+                    <span className="absolute -left-5 top-2.5 text-xs text-muted-foreground font-mono">{index + 1}.</span>
+                    <Input
+                      type="text"
+                      placeholder="????"
+                      value={word}
+                      onChange={e => handleWordChange(index, e.target.value)}
+                      className="lowercase"
+                      disabled={isBusy}
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                      spellCheck="false"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+        ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="md:col-span-2 space-y-2">
+                    <Label htmlFor="known-words" className="font-semibold text-base">Known Words (space separated)</Label>
+                    <Textarea 
+                        id="known-words"
+                        placeholder="abandon ability able about above..."
+                        value={knownWords}
+                        onChange={(e) => setKnownWords(e.target.value)}
+                        disabled={isBusy}
+                        className="h-32"
+                        autoCapitalize="none"
+                        autoCorrect="off"
+                        spellCheck="false"
+                    />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="missing-word-count" className="font-semibold text-base">Number of Missing Words</Label>
+                    <Input 
+                        id="missing-word-count"
+                        type="number"
+                        min="1"
+                        max="2"
+                        value={missingWordCount}
+                        onChange={(e) => setMissingWordCount(Math.min(2, Math.max(1, Number(e.target.value))))}
+                        disabled={isBusy}
+                    />
+                </div>
+            </div>
+        )}
 
         {/* --- Controls --- */}
         <div className="space-y-4 pt-4 border-t">
@@ -463,3 +580,5 @@ export default function SeedSavior() {
     </Card>
   );
 }
+
+    
