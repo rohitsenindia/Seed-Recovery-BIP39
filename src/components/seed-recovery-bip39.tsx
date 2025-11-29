@@ -55,7 +55,7 @@ export default function SeedRecoveryBIP39() {
   const [recoveryMode, setRecoveryMode] = React.useState<RecoveryMode>("ordered");
   const [targetAddress, setTargetAddress] = React.useState("");
   const [derivationPath, setDerivationPath] = React.useState(DEFAULT_DERIVATION_PATH);
-  const [childIndexes, setChildIndexes] = React.useState(30);
+  const [childIndexes, setChildIndexes] = React.useState(1);
   const [isConfirmed, setIsConfirmed] = React.useState(false);
   
   const [status, setStatus] = React.useState<Status>("idle");
