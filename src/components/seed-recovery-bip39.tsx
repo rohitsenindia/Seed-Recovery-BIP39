@@ -80,7 +80,8 @@ export default function SeedRecoveryBIP39() {
       return;
     }
     
-    workerRef.current = new Worker("/worker.js");
+    // Use the bundled worker from Next.js
+    workerRef.current = new Worker(new URL('../app/worker.ts', import.meta.url));
     workerRef.current.onmessage = handleWorkerMessage;
     
     // Cleanup function
