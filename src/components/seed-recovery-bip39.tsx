@@ -564,7 +564,7 @@ export default function SeedRecoveryBIP39() {
 
       <CardFooter className="flex-col items-center gap-2 pt-6 text-center text-sm text-muted-foreground">
         <p>
-          Built by <a href="https://github.com/rohitsenindia" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">Rohit Sen</a>.
+          Built by <a href="https://x.com/ask_rohitsen" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">Rohit Sen</a>.
         </p>
         <p>
           Verify the code on <a href="https://github.com/rohitsenindia/Seed-Recovery-BIP39" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">GitHub</a>.
@@ -590,5 +590,3 @@ export default function SeedRecoveryBIP39() {
     </Card>
   );
 }
-
-    

@@ -56,9 +56,7 @@ This tool is designed to run entirely within your web browser. **No data, includ
 
 ## ✍️ Author & Code Verification
 
-This tool was built by **[Rohit Sen](https://github.com/rohitsenindia)**.
+This tool was built by **[Rohit Sen](https://x.com/ask_rohitsen)**.
 
 The entire codebase is open-source. You are encouraged to audit and verify the code's integrity to ensure your security. You can find the repository here:
 **[https://github.com/rohitsenindia/Seed-Recovery-BIP39](https://github.com/rohitsenindia/Seed-Recovery-BIP39)**
-
-    
